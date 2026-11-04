@@ -54,9 +54,9 @@ export const CandidateProfile: React.FC = () => {
   const [candidatePhotoUrl, setCandidatePhotoUrl] = useState('');
   const [partySymbol, setPartySymbol] = useState('');
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (opts: { silent?: boolean } = {}) => {
     try {
-      setLoading(true);
+      if (!opts.silent) setLoading(true);
       const res = await fetch(`${API_BASE}/candidate/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -69,19 +69,31 @@ export const CandidateProfile: React.FC = () => {
 
       const data: Candidate = await res.json();
       setProfile(data);
-      setManifesto(data.manifesto || '');
-      setSymbolPhotoUrl(data.symbolPhotoUrl || '');
-      setCandidatePhotoUrl(data.candidatePhotoUrl || '');
-      setPartySymbol(data.partySymbol || '');
+      // Don't clobber in-progress edits with background refreshes.
+      if (!editing) {
+        setManifesto(data.manifesto || '');
+        setSymbolPhotoUrl(data.symbolPhotoUrl || '');
+        setCandidatePhotoUrl(data.candidatePhotoUrl || '');
+        setPartySymbol(data.partySymbol || '');
+      }
     } catch (err: any) {
-      notify(err.message || 'Error loading profile.', 'error');
+      if (!opts.silent) notify(err.message || 'Error loading profile.', 'error');
     } finally {
-      setLoading(false);
+      if (!opts.silent) setLoading(false);
     }
-  }, [token, logout, notify]);
+  }, [token, logout, notify, editing]);
 
   useEffect(() => {
     fetchProfile();
+  }, [fetchProfile]);
+
+  // The live vote count changes whenever voters cast ballots elsewhere, so
+  // poll the backend quietly instead of only loading it once on mount.
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      fetchProfile({ silent: true });
+    }, 5000);
+    return () => window.clearInterval(intervalId);
   }, [fetchProfile]);
 
   const handleSave = async () => {

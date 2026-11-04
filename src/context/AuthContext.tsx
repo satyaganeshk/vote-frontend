@@ -9,7 +9,7 @@ interface AuthContextType {
   loginVoter: (payload: VoterLoginPayload) => Promise<{ success: boolean; error?: string }>;
   loginCredential: (payload: CredentialLoginPayload) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  updateUserHasVoted: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -135,13 +135,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateUserHasVoted = useCallback(() => {
-    if (user) {
-      const updated = { ...user, hasVoted: true };
-      setUser(updated);
-      sessionStorage.setItem(USER_KEY, JSON.stringify(updated));
+  // Re-fetches the current user from the backend, so state like hasVoted
+  // reflects the database rather than an optimistic local guess.
+  const refreshUser = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      if (!res.ok) return;
+      const data: { user: User } = await res.json();
+      setUser(data.user);
+      sessionStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    } catch (err) {
+      console.error('Failed to refresh session user', err);
     }
-  }, [user]);
+  }, [token, logout]);
 
   const role = user ? user.role : null;
   const isAuthenticated = Boolean(token && user);
@@ -156,7 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginVoter,
         loginCredential,
         logout,
-        updateUserHasVoted,
+        refreshUser,
       }}
     >
       {children}

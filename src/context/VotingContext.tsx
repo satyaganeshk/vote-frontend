@@ -13,6 +13,7 @@ interface VotingContextType {
   approveVoter: (userId: string, isApproved: boolean) => Promise<void>;
   reviewCandidate: (candidateId: string, status: 'APPROVED' | 'REJECTED') => Promise<void>;
   registerCandidate: (candidate: Omit<Candidate, 'id' | 'approvalStatus' | 'voteCount'>) => Promise<void>;
+  registerVoter: (voter: { name: string; voterId: string; pin: string; constituency?: string }) => Promise<{ success: boolean; message: string }>;
   refreshData: () => Promise<void>;
 }
 
@@ -21,7 +22,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const VotingContext = createContext<VotingContextType | null>(null);
 
 export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user: currentUser, token, logout, updateUserHasVoted } = useAuth();
+  const { user: currentUser, token, logout, refreshUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [stats, setStats] = useState<ElectionStats>({
@@ -108,6 +109,16 @@ export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [token, currentUser, refreshData]);
 
+  // Admin view shows aggregate counts that change whenever any voter casts a
+  // ballot elsewhere, so poll the backend instead of relying on stale state.
+  useEffect(() => {
+    if (!token || !currentUser || currentUser.role !== 'ADMIN') return;
+    const intervalId = window.setInterval(() => {
+      refreshData();
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [token, currentUser, refreshData]);
+
   const castVote = async (candidateId: string): Promise<{ success: boolean; message: string }> => {
     if (!currentUser || !token) return { success: false, message: 'No active voter session.' };
 
@@ -124,7 +135,7 @@ export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
         return { success: false, message: data.error || 'Failed to submit vote.' };
       }
-      updateUserHasVoted();
+      await refreshUser();
       return { success: true, message: data.message };
     } catch (err: any) {
       return { success: false, message: err.message || 'Network error while casting vote.' };
@@ -186,6 +197,33 @@ export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const registerVoter = async (voter: {
+    name: string;
+    voterId: string;
+    pin: string;
+    constituency?: string;
+  }): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/voters`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(voter),
+      });
+      const data = await res.json();
+      if (res.status === 401) {
+        logout();
+        return { success: false, message: 'Session expired.' };
+      }
+      if (!res.ok) {
+        return { success: false, message: data.error || 'Failed to register voter.' };
+      }
+      await refreshData();
+      return { success: true, message: data.message };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Network error while registering voter.' };
+    }
+  };
+
   return (
     <VotingContext.Provider
       value={{
@@ -199,6 +237,7 @@ export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         approveVoter,
         reviewCandidate,
         registerCandidate,
+        registerVoter,
         refreshData,
       }}
     >
