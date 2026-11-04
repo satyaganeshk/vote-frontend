@@ -1,138 +1,71 @@
-import React from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Box,
-  Select,
-  MenuItem,
-  Chip,
-  Container,
-  FormControl,
-  InputLabel,
-  CssBaseline,
-  ThemeProvider,
-  createTheme,
-  Alert,
-  CircularProgress,
-} from '@mui/material';
-import {
-  HowToVoteIcon,
-  AdminPanelSettingsIcon,
-  PersonIcon,
-} from '../components/icons';
+import React, { useEffect, useRef } from 'react';
+import { Outlet } from 'react-router-dom';
+import { AppBar, Toolbar, Typography, Box, Button, Container } from '@mui/material';
+import HowToVoteOutlinedIcon from '@mui/icons-material/HowToVoteOutlined';
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import { useAuth } from '../context/AuthContext';
 import { useVoting } from '../context/VotingContext';
-import { VoterBallot } from '../components/VoterBallot';
-import { AdminDashboard } from '../components/AdminDashboard';
+import { useSnackbar } from '../context/SnackbarContext';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#0f3a6a', // AP Election Commission blue
-    },
-    secondary: {
-      main: '#b45309', // Amber
-    },
-    background: {
-      default: '#f1f5f9',
-    },
-  },
-  typography: {
-    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-  },
-});
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: 'Admin',
+  CANDIDATE: 'Candidate',
+  VOTER: 'Voter',
+};
 
-export const VotingApp: React.FC = () => {
-  const { currentUser, users, switchUser, loading, error } = useVoting();
+export const AppLayout: React.FC = () => {
+  const { user, role, logout } = useAuth();
+  const { error } = useVoting();
+  const { notify } = useSnackbar();
+  const lastShownError = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (error && error !== lastShownError.current) {
+      lastShownError.current = error;
+      notify(error, 'error');
+    }
+  }, [error, notify]);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {/* Navigation Bar */}
-        <AppBar position="sticky" elevation={2} sx={{ bgcolor: '#0b2447' }}>
-          <Toolbar>
-            <HowToVoteIcon sx={{ mr: 1.5, fontSize: 32, color: '#38bdf8' }} />
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" fontWeight="700" sx={{ letterSpacing: 0.5 }}>
-                ELECTION COMMISSION • EAST GODAVARI
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'grey.300', display: 'block' }}>
-                Democratic Single-Vote RBAC Platform • Andhra Pradesh Assembly Constituencies
-              </Typography>
-            </Box>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <AppBar position="sticky" color="default" sx={{ bgcolor: 'background.paper' }}>
+        <Toolbar sx={{ gap: 1.5 }}>
+          <HowToVoteOutlinedIcon color="primary" />
+          <Typography variant="subtitle1" sx={{ flexGrow: 1 }} noWrap>
+            Election Portal
+          </Typography>
 
-            {/* Current Role Badge */}
-            <Chip
-              icon={currentUser?.role === 'ADMIN' ? <AdminPanelSettingsIcon /> : <PersonIcon />}
-              label={`Role: ${currentUser?.role || 'GUEST'}`}
-              color={currentUser?.role === 'ADMIN' ? 'warning' : 'info'}
-              sx={{ mr: 2, fontWeight: 'bold' }}
-            />
+          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }} noWrap>
+            {user?.name} {role ? `· ${ROLE_LABEL[role] ?? role}` : ''}
+          </Typography>
 
-            {/* Simulated Session Switcher */}
-            <FormControl size="small" sx={{ minWidth: 280, bgcolor: 'rgba(255, 255, 255, 0.12)', borderRadius: 1 }}>
-              <InputLabel id="user-select-label" sx={{ color: 'grey.300' }}>
-                Active Electoral Account
-              </InputLabel>
-              <Select
-                labelId="user-select-label"
-                value={currentUser?.id || ''}
-                label="Active Electoral Account"
-                onChange={(e) => switchUser(e.target.value)}
-                sx={{
-                  color: '#fff',
-                  '.MuiSvgIcon-root': { color: '#fff' },
-                  '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.25)' },
-                }}
-              >
-                {users.map((u) => (
-                  <MenuItem key={u.id} value={u.id}>
-                    {u.name} ({u.role}{u.role === 'VOTER' && (u.isApprovedVoter ? ' - Approved' : ' - Restricted')})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Toolbar>
-        </AppBar>
+          <Button
+            variant="text"
+            color="inherit"
+            size="small"
+            startIcon={<LogoutOutlinedIcon fontSize="small" />}
+            onClick={logout}
+          >
+            Sign out
+          </Button>
+        </Toolbar>
+      </AppBar>
 
-        {/* Global Loading / Error Notifications */}
-        <Container maxWidth="lg" sx={{ flexGrow: 1, my: 4 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error} - Make sure the backend server is running (`http://localhost:5000`).
-            </Alert>
-          )}
+      <Container maxWidth="lg" component="main" sx={{ flexGrow: 1, py: { xs: 2, sm: 4 } }}>
+        <Outlet />
+      </Container>
 
-          {loading ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8, gap: 2 }}>
-              <CircularProgress />
-              <Typography color="text.secondary">Loading election data from backend...</Typography>
-            </Box>
-          ) : currentUser?.role === 'ADMIN' ? (
-            <AdminDashboard />
-          ) : (
-            <VoterBallot />
-          )}
-        </Container>
-
-        {/* Footer */}
-        <Box
-          component="footer"
-          sx={{
-            py: 2,
-            px: 2,
-            mt: 'auto',
-            bgcolor: '#0b2447',
-            color: 'grey.400',
-            textAlign: 'center',
-            fontSize: '0.875rem',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-          }}
-        >
-          East Godavari District Election Portal • Strictly Restricted Secret Ballot Protocol
-        </Box>
+      <Box
+        component="footer"
+        sx={{
+          py: 2,
+          textAlign: 'center',
+          color: 'text.secondary',
+          fontSize: '0.75rem',
+        }}
+      >
+        East Godavari District Election Commission
       </Box>
-    </ThemeProvider>
+    </Box>
   );
 };

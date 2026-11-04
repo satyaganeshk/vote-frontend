@@ -8,12 +8,14 @@ export interface User {
   constituency?: string;
   isApprovedVoter: boolean;
   hasVoted: boolean;
+  candidateId?: string;
 }
 
 export type CandidateApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface Candidate {
   id: string;
+  userId?: string;
   name: string;
   partyName: string;
   partySymbol: string;
@@ -30,4 +32,21 @@ export interface ElectionStats {
   totalApprovedVoters: number;
   totalVotesCast: number;
   votingPercentage: number;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+  expiresIn: number;
+}
+
+export interface VoterLoginPayload {
+  voterId: string;
+  pin: string;
+}
+
+export interface CredentialLoginPayload {
+  email: string;
+  password: string;
+  role: 'ADMIN' | 'CANDIDATE';
 }
