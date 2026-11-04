@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  constituency?: string;
   isApprovedVoter: boolean;
   hasVoted: boolean;
 }
@@ -15,12 +16,13 @@ export interface Candidate {
   id: string;
   name: string;
   partyName: string;
-  partySymbol: string;      // Emoji or icon/symbol identifier
-  symbolPhotoUrl?: string;  // Image URL for party logo/symbol
-  candidatePhotoUrl?: string; // Image URL for candidate photo
+  partySymbol: string;
+  symbolPhotoUrl?: string;
+  candidatePhotoUrl?: string;
+  constituency?: string;
   manifesto?: string;
   approvalStatus: CandidateApprovalStatus;
-  voteCount?: number;       // Admin aggregate count only
+  voteCount?: number;
 }
 
 export interface ElectionStats {

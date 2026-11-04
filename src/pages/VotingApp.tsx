@@ -13,6 +13,8 @@ import {
   CssBaseline,
   ThemeProvider,
   createTheme,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import {
   HowToVoteIcon,
@@ -26,13 +28,13 @@ import { AdminDashboard } from '../components/AdminDashboard';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1e3a8a', // Deep navy
+      main: '#0f3a6a', // AP Election Commission blue
     },
     secondary: {
-      main: '#0284c7', // Sky blue
+      main: '#b45309', // Amber
     },
     background: {
-      default: '#f8fafc',
+      default: '#f1f5f9',
     },
   },
   typography: {
@@ -41,26 +43,26 @@ const theme = createTheme({
 });
 
 export const VotingApp: React.FC = () => {
-  const { currentUser, users, switchUser } = useVoting();
+  const { currentUser, users, switchUser, loading, error } = useVoting();
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         {/* Navigation Bar */}
-        <AppBar position="sticky" elevation={2} sx={{ bgcolor: '#0f172a' }}>
+        <AppBar position="sticky" elevation={2} sx={{ bgcolor: '#0b2447' }}>
           <Toolbar>
             <HowToVoteIcon sx={{ mr: 1.5, fontSize: 32, color: '#38bdf8' }} />
             <Box sx={{ flexGrow: 1 }}>
               <Typography variant="h6" fontWeight="700" sx={{ letterSpacing: 0.5 }}>
-                VOTE SPHERE
+                ELECTION COMMISSION • EAST GODAVARI
               </Typography>
-              <Typography variant="caption" sx={{ color: 'grey.400' }}>
-                Secure Role-Based Democratic Electronic Voting
+              <Typography variant="caption" sx={{ color: 'grey.300', display: 'block' }}>
+                Democratic Single-Vote RBAC Platform • Andhra Pradesh Assembly Constituencies
               </Typography>
             </Box>
 
-            {/* Current Role Indicator */}
+            {/* Current Role Badge */}
             <Chip
               icon={currentUser?.role === 'ADMIN' ? <AdminPanelSettingsIcon /> : <PersonIcon />}
               label={`Role: ${currentUser?.role || 'GUEST'}`}
@@ -68,20 +70,20 @@ export const VotingApp: React.FC = () => {
               sx={{ mr: 2, fontWeight: 'bold' }}
             />
 
-            {/* User Switcher (For demo and testing RBAC behavior) */}
-            <FormControl size="small" sx={{ minWidth: 260, bgcolor: 'rgba(255, 255, 255, 0.1)', borderRadius: 1 }}>
+            {/* Simulated Session Switcher */}
+            <FormControl size="small" sx={{ minWidth: 280, bgcolor: 'rgba(255, 255, 255, 0.12)', borderRadius: 1 }}>
               <InputLabel id="user-select-label" sx={{ color: 'grey.300' }}>
-                Simulate Account
+                Active Electoral Account
               </InputLabel>
               <Select
                 labelId="user-select-label"
                 value={currentUser?.id || ''}
-                label="Simulate Account"
+                label="Active Electoral Account"
                 onChange={(e) => switchUser(e.target.value)}
                 sx={{
                   color: '#fff',
                   '.MuiSvgIcon-root': { color: '#fff' },
-                  '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
+                  '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.25)' },
                 }}
               >
                 {users.map((u) => (
@@ -94,9 +96,20 @@ export const VotingApp: React.FC = () => {
           </Toolbar>
         </AppBar>
 
-        {/* Dynamic RBAC Main Container */}
+        {/* Global Loading / Error Notifications */}
         <Container maxWidth="lg" sx={{ flexGrow: 1, my: 4 }}>
-          {currentUser?.role === 'ADMIN' ? (
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error} - Make sure the backend server is running (`http://localhost:5000`).
+            </Alert>
+          )}
+
+          {loading ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8, gap: 2 }}>
+              <CircularProgress />
+              <Typography color="text.secondary">Loading election data from backend...</Typography>
+            </Box>
+          ) : currentUser?.role === 'ADMIN' ? (
             <AdminDashboard />
           ) : (
             <VoterBallot />
@@ -110,14 +123,14 @@ export const VotingApp: React.FC = () => {
             py: 2,
             px: 2,
             mt: 'auto',
-            bgcolor: '#0f172a',
+            bgcolor: '#0b2447',
             color: 'grey.400',
             textAlign: 'center',
             fontSize: '0.875rem',
             borderTop: '1px solid rgba(255,255,255,0.1)',
           }}
         >
-          Secure Single-Vote RBAC Architecture • Ballots are Immutable & Anonymously Tallied
+          East Godavari District Election Portal • Strictly Restricted Secret Ballot Protocol
         </Box>
       </Box>
     </ThemeProvider>

@@ -30,6 +30,7 @@ export const VoterBallot: React.FC = () => {
   const { currentUser, candidates, castVote } = useVoting();
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const approvedCandidates = candidates.filter((c) => c.approvalStatus === 'APPROVED');
@@ -39,9 +40,11 @@ export const VoterBallot: React.FC = () => {
     setConfirmOpen(true);
   };
 
-  const handleConfirmVote = () => {
+  const handleConfirmVote = async () => {
     if (!selectedCandidate) return;
-    const result = castVote(selectedCandidate.id);
+    setSubmitting(true);
+    const result = await castVote(selectedCandidate.id);
+    setSubmitting(false);
     if (result.success) {
       setFeedback({ type: 'success', message: result.message });
     } else {
@@ -51,6 +54,7 @@ export const VoterBallot: React.FC = () => {
   };
 
   const handleCloseDialog = () => {
+    if (submitting) return;
     setConfirmOpen(false);
     setSelectedCandidate(null);
   };
@@ -64,10 +68,10 @@ export const VoterBallot: React.FC = () => {
         <Grid container alignItems="center" spacing={2}>
           <Grid item xs={12} sm={8}>
             <Typography variant="h5" fontWeight="700" gutterBottom>
-              Official Ballot
+              East Godavari District Official Ballot
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Voter ID: <strong>{currentUser?.id}</strong> | Name: <strong>{currentUser?.name}</strong>
+              Voter ID: <strong>{currentUser?.id}</strong> | Name: <strong>{currentUser?.name}</strong> | Constituency: <strong>{currentUser?.constituency || 'East Godavari'}</strong>
             </Typography>
           </Grid>
           <Grid item xs={12} sm={4} sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
@@ -113,9 +117,12 @@ export const VoterBallot: React.FC = () => {
       </Box>
 
       {/* Candidate List */}
-      <Typography variant="h6" fontWeight="600" sx={{ mb: 2 }}>
-        Approved Election Candidates
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6" fontWeight="600">
+          Official Candidates (East Godavari District)
+        </Typography>
+        <Chip label={`${approvedCandidates.length} Approved Nominees`} color="primary" variant="outlined" size="small" />
+      </Box>
 
       <Grid container spacing={3}>
         {approvedCandidates.map((candidate) => (
@@ -139,15 +146,20 @@ export const VoterBallot: React.FC = () => {
                 />
               )}
               <CardContent sx={{ flexGrow: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                  <Typography variant="h6" fontWeight="700">
-                    {candidate.name}
-                  </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5, gap: 1 }}>
+                  <Box>
+                    <Typography variant="h6" fontWeight="700">
+                      {candidate.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Constituency: {candidate.constituency || 'East Godavari'}
+                    </Typography>
+                  </Box>
                   <Avatar
                     src={candidate.symbolPhotoUrl}
-                    sx={{ width: 42, height: 42, bgcolor: 'primary.light', fontSize: '1.4rem' }}
+                    sx={{ width: 44, height: 44, bgcolor: 'primary.light', fontSize: '1.2rem', flexShrink: 0 }}
                   >
-                    {candidate.partySymbol}
+                    {candidate.partySymbol.slice(0, 2)}
                   </Avatar>
                 </Box>
 
@@ -162,9 +174,9 @@ export const VoterBallot: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="caption" color="text.secondary">
-                      Party Symbol:
+                      Symbol:
                     </Typography>
-                    <Typography variant="body1" fontWeight="700">
+                    <Typography variant="body2" fontWeight="700">
                       {candidate.partySymbol}
                     </Typography>
                   </Box>
@@ -173,7 +185,7 @@ export const VoterBallot: React.FC = () => {
                     variant="contained"
                     color="primary"
                     startIcon={currentUser?.hasVoted ? <BlockIcon /> : <HowToVoteIcon />}
-                    disabled={!canVote}
+                    disabled={!canVote || submitting}
                     onClick={() => handleVoteClick(candidate)}
                   >
                     {currentUser?.hasVoted ? 'Already Voted' : 'Vote'}
@@ -205,7 +217,7 @@ export const VoterBallot: React.FC = () => {
             }}
           >
             <Avatar src={selectedCandidate?.symbolPhotoUrl} sx={{ width: 48, height: 48, bgcolor: 'primary.light' }}>
-              {selectedCandidate?.partySymbol}
+              {selectedCandidate?.partySymbol.slice(0, 2)}
             </Avatar>
             <Box>
               <Typography variant="subtitle1" fontWeight="700">
@@ -221,11 +233,11 @@ export const VoterBallot: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ pb: 2, px: 3 }}>
-          <Button onClick={handleCloseDialog} color="inherit">
+          <Button onClick={handleCloseDialog} color="inherit" disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={handleConfirmVote} variant="contained" color="primary" autoFocus>
-            Yes, Submit Vote
+          <Button onClick={handleConfirmVote} variant="contained" color="primary" autoFocus disabled={submitting}>
+            {submitting ? 'Submitting...' : 'Yes, Submit Vote'}
           </Button>
         </DialogActions>
       </Dialog>

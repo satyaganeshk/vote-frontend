@@ -47,19 +47,21 @@ export const AdminDashboard: React.FC = () => {
   const [partySymbol, setPartySymbol] = useState('');
   const [symbolPhotoUrl, setSymbolPhotoUrl] = useState('');
   const [candidatePhotoUrl, setCandidatePhotoUrl] = useState('');
+  const [constituency, setConstituency] = useState('Kakinada City');
   const [manifesto, setManifesto] = useState('');
 
   const voters = users.filter((u) => u.role !== 'ADMIN');
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !partyName || !partySymbol) return;
-    registerCandidate({
+    await registerCandidate({
       name,
       partyName,
       partySymbol,
-      symbolPhotoUrl: symbolPhotoUrl || 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=160',
-      candidatePhotoUrl: candidatePhotoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+      symbolPhotoUrl: symbolPhotoUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Telugu_Desam_Party_flag.svg/240px-Telugu_Desam_Party_flag.svg.png',
+      candidatePhotoUrl: candidatePhotoUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
+      constituency,
       manifesto,
     });
     setOpenModal(false);
@@ -76,9 +78,14 @@ export const AdminDashboard: React.FC = () => {
       {/* Header & Stats Cards */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5" fontWeight="700">
-            Election Commission Administration
-          </Typography>
+          <Box>
+            <Typography variant="h5" fontWeight="700">
+              East Godavari Election Administration
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Official Returning Officer Panel • Andhra Pradesh Legislative Assembly Monitoring
+            </Typography>
+          </Box>
           <Button
             variant="outlined"
             startIcon={<AddCircleOutlineIcon />}
@@ -95,7 +102,7 @@ export const AdminDashboard: React.FC = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
                     <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                      TOTAL VOTERS
+                      REGISTERED VOTERS
                     </Typography>
                     <Typography variant="h4" fontWeight="bold">
                       {stats.totalRegisteredUsers}
@@ -113,7 +120,7 @@ export const AdminDashboard: React.FC = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
                     <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                      APPROVED TO VOTE
+                      AUTHORIZED VOTERS
                     </Typography>
                     <Typography variant="h4" fontWeight="bold">
                       {stats.totalApprovedVoters}
@@ -131,7 +138,7 @@ export const AdminDashboard: React.FC = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
                     <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                      TOTAL VOTES CAST
+                      BALLOTS RECORDED
                     </Typography>
                     <Typography variant="h4" fontWeight="bold">
                       {stats.totalVotesCast}
@@ -149,7 +156,7 @@ export const AdminDashboard: React.FC = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
                     <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                      TURNOUT RATE
+                      VOTER TURNOUT
                     </Typography>
                     <Typography variant="h4" fontWeight="bold">
                       {stats.votingPercentage}%
@@ -179,6 +186,7 @@ export const AdminDashboard: React.FC = () => {
             <TableHead>
               <TableRow sx={{ bgcolor: 'grey.100' }}>
                 <TableCell><strong>Citizen / Voter Name</strong></TableCell>
+                <TableCell><strong>Constituency</strong></TableCell>
                 <TableCell><strong>Email</strong></TableCell>
                 <TableCell><strong>Ballot Status</strong></TableCell>
                 <TableCell><strong>Authorization</strong></TableCell>
@@ -196,6 +204,7 @@ export const AdminDashboard: React.FC = () => {
                       ID: {voter.id}
                     </Typography>
                   </TableCell>
+                  <TableCell>{voter.constituency || 'East Godavari'}</TableCell>
                   <TableCell>{voter.email}</TableCell>
                   <TableCell>
                     {voter.hasVoted ? (
@@ -248,8 +257,9 @@ export const AdminDashboard: React.FC = () => {
               <TableRow sx={{ bgcolor: 'grey.100' }}>
                 <TableCell><strong>Candidate</strong></TableCell>
                 <TableCell><strong>Party & Symbol</strong></TableCell>
+                <TableCell><strong>Constituency</strong></TableCell>
                 <TableCell><strong>Manifesto</strong></TableCell>
-                <TableCell><strong>Approval Status</strong></TableCell>
+                <TableCell><strong>Status</strong></TableCell>
                 <TableCell align="right"><strong>Admin Decision</strong></TableCell>
               </TableRow>
             </TableHead>
@@ -277,9 +287,9 @@ export const AdminDashboard: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar
                         src={cand.symbolPhotoUrl}
-                        sx={{ width: 32, height: 32, bgcolor: 'secondary.light', fontSize: '1rem' }}
+                        sx={{ width: 34, height: 34, bgcolor: 'secondary.light', fontSize: '1rem' }}
                       >
-                        {cand.partySymbol}
+                        {cand.partySymbol.slice(0, 2)}
                       </Avatar>
                       <Box>
                         <Typography variant="body2" fontWeight="600">
@@ -291,7 +301,8 @@ export const AdminDashboard: React.FC = () => {
                       </Box>
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 280 }}>
+                  <TableCell>{cand.constituency || 'East Godavari'}</TableCell>
+                  <TableCell sx={{ maxWidth: 260 }}>
                     <Typography variant="body2" noWrap title={cand.manifesto}>
                       {cand.manifesto || 'No manifesto'}
                     </Typography>
@@ -342,11 +353,11 @@ export const AdminDashboard: React.FC = () => {
         </TableContainer>
       )}
 
-      {/* Tab 2: Results & Aggregate Tallies (No voter ballot deanonymization) */}
+      {/* Tab 2: Results & Aggregate Tallies (Strictly Anonymous) */}
       {activeTab === 2 && (
         <Box>
           <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
-            Under election anonymity rules, individual vote ballots cannot be viewed or traced to voters. Only aggregated participant counts are revealed.
+            Under democratic secrecy policy, individual ballots are decoupled from voters. Only aggregated participant counts are revealed.
           </Typography>
 
           <Grid container spacing={3}>
@@ -367,14 +378,14 @@ export const AdminDashboard: React.FC = () => {
                             src={cand.symbolPhotoUrl}
                             sx={{ width: 44, height: 44, bgcolor: 'primary.light', fontSize: '1.2rem' }}
                           >
-                            {cand.partySymbol}
+                            {cand.partySymbol.slice(0, 2)}
                           </Avatar>
                           <Box>
                             <Typography variant="h6" fontWeight="700">
                               {cand.name}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              {cand.partyName} ({cand.partySymbol})
+                              {cand.partyName} ({cand.partySymbol}) • {cand.constituency}
                             </Typography>
                           </Box>
                         </Box>
@@ -404,7 +415,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Nominate Candidate Dialog */}
       <Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>Nominate New Candidate</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>Nominate Candidate (East Godavari)</DialogTitle>
         <Divider />
         <form onSubmit={handleRegisterSubmit}>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
@@ -420,14 +431,23 @@ export const AdminDashboard: React.FC = () => {
               required
               fullWidth
               value={partyName}
+              placeholder="e.g. Telugu Desam Party (TDP)"
               onChange={(e) => setPartyName(e.target.value)}
             />
             <TextField
-              label="Party Symbol (Emoji or Character, e.g. 🌟, 🦅, ⚖️)"
+              label="Party Symbol"
               required
               fullWidth
               value={partySymbol}
+              placeholder="e.g. 🚲 Bicycle, 🪭 Fan, 🥛 Glass Tumbler"
               onChange={(e) => setPartySymbol(e.target.value)}
+            />
+            <TextField
+              label="Constituency"
+              required
+              fullWidth
+              value={constituency}
+              onChange={(e) => setConstituency(e.target.value)}
             />
             <TextField
               label="Party Logo / Symbol Image URL"
@@ -444,7 +464,7 @@ export const AdminDashboard: React.FC = () => {
               onChange={(e) => setCandidatePhotoUrl(e.target.value)}
             />
             <TextField
-              label="Election Manifesto / Brief"
+              label="Election Manifesto / Pledges"
               multiline
               rows={3}
               fullWidth
@@ -457,7 +477,7 @@ export const AdminDashboard: React.FC = () => {
               Cancel
             </Button>
             <Button type="submit" variant="contained" color="primary">
-              Submit Candidate Application
+              Submit Nomination
             </Button>
           </DialogActions>
         </form>
