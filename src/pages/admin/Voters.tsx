@@ -48,8 +48,8 @@ export const Voters: React.FC = () => {
 
   const [addOpen, setAddOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ name: '', voterId: '', pin: '', constituency: 'East Godavari' });
-  const [createdVoter, setCreatedVoter] = useState<{ name: string; voterId: string; pin: string } | null>(null);
+  const [form, setForm] = useState({ name: '', voterId: '', email: '', constituency: 'East Godavari' });
+  const [createdVoter, setCreatedVoter] = useState<{ name: string; voterId: string; email: string } | null>(null);
 
   const voters = useMemo(() => users.filter((u) => u.role === 'VOTER'), [users]);
 
@@ -83,16 +83,16 @@ export const Voters: React.FC = () => {
     setRevokeTarget(null);
   };
 
-  const resetForm = () => setForm({ name: '', voterId: '', pin: '', constituency: 'East Godavari' });
+  const resetForm = () => setForm({ name: '', voterId: '', email: '', constituency: 'East Godavari' });
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.voterId || !/^\d{4}$/.test(form.pin)) return;
+    if (!form.name || !form.voterId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return;
     setBusy(true);
     const result = await registerVoter(form);
     setBusy(false);
     if (result.success) {
-      setCreatedVoter({ name: form.name, voterId: form.voterId, pin: form.pin });
+      setCreatedVoter({ name: form.name, voterId: form.voterId, email: form.email });
       setAddOpen(false);
       resetForm();
     } else {
@@ -100,12 +100,11 @@ export const Voters: React.FC = () => {
     }
   };
 
-  const handleCopyCredentials = async () => {
+  const handleCopyVoterId = async () => {
     if (!createdVoter) return;
-    const text = `Voter ID: ${createdVoter.voterId}\nPIN: ${createdVoter.pin}`;
     try {
-      await navigator.clipboard.writeText(text);
-      notify('Credentials copied to clipboard.', 'success');
+      await navigator.clipboard.writeText(createdVoter.voterId);
+      notify('Voter ID copied to clipboard.', 'success');
     } catch {
       notify('Could not copy automatically — copy manually from below.', 'error');
     }
@@ -300,13 +299,13 @@ export const Voters: React.FC = () => {
                 helperText="Used to sign in, e.g. eg-voter-108"
               />
               <TextField
-                label="4-digit PIN"
+                label="Email"
+                type="email"
                 required
                 fullWidth
-                value={form.pin}
-                onChange={(e) => setForm((f) => ({ ...f, pin: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                error={form.pin.length > 0 && form.pin.length !== 4}
-                helperText={form.pin.length > 0 && form.pin.length !== 4 ? 'PIN must be exactly 4 digits' : ' '}
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value.trim() }))}
+                helperText="One-time sign-in codes are sent here"
               />
               <TextField
                 label="Constituency"
@@ -329,25 +328,25 @@ export const Voters: React.FC = () => {
         </Box>
       </Drawer>
 
-      {/* Post-create credentials, for the admin to hand to the voter */}
+      {/* Post-create confirmation — voter signs in with Voter ID + an emailed one-time code, no PIN to share */}
       <Dialog open={Boolean(createdVoter)} onClose={() => setCreatedVoter(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Voter registered</DialogTitle>
         <DialogContent>
           <Alert severity="success" sx={{ mb: 2 }}>
-            {createdVoter?.name} can now sign in and vote. Share these credentials with them — the PIN can't be
-            retrieved again once you close this.
+            {createdVoter?.name} can now sign in and vote. They'll enter their Voter ID at login and receive a
+            one-time code at {createdVoter?.email} — there's no PIN to share.
           </Alert>
           <Stack spacing={1.5}>
             <TextField label="Voter ID" value={createdVoter?.voterId || ''} InputProps={{ readOnly: true }} fullWidth />
-            <TextField label="PIN" value={createdVoter?.pin || ''} InputProps={{ readOnly: true }} fullWidth />
+            <TextField label="Email" value={createdVoter?.email || ''} InputProps={{ readOnly: true }} fullWidth />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={() => setCreatedVoter(null)} color="inherit">
             Close
           </Button>
-          <Button onClick={handleCopyCredentials} variant="contained" startIcon={<ContentCopyOutlinedIcon />}>
-            Copy
+          <Button onClick={handleCopyVoterId} variant="contained" startIcon={<ContentCopyOutlinedIcon />}>
+            Copy Voter ID
           </Button>
         </DialogActions>
       </Dialog>

@@ -13,7 +13,7 @@ interface VotingContextType {
   approveVoter: (userId: string, isApproved: boolean) => Promise<void>;
   reviewCandidate: (candidateId: string, status: 'APPROVED' | 'REJECTED') => Promise<void>;
   registerCandidate: (candidate: Omit<Candidate, 'id' | 'approvalStatus' | 'voteCount'>) => Promise<void>;
-  registerVoter: (voter: { name: string; voterId: string; pin: string; constituency?: string }) => Promise<{ success: boolean; message: string }>;
+  registerVoter: (voter: { name: string; voterId: string; email: string; constituency?: string }) => Promise<{ success: boolean; message: string }>;
   refreshData: () => Promise<void>;
 }
 
@@ -200,7 +200,7 @@ export const VotingProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const registerVoter = async (voter: {
     name: string;
     voterId: string;
-    pin: string;
+    email: string;
     constituency?: string;
   }): Promise<{ success: boolean; message: string }> => {
     try {

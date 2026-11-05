@@ -33,6 +33,8 @@ The role badge in the top-right changes color per role: amber/"warning" for Admi
 
 ### 1. Login screen (before authentication)
 
+> **Note:** this mockup predates two changes — login is now routed per role (`/login`, `/login/admin`, `/login/candidate` in `LoginScreen.tsx`) rather than tabs on one screen, and **Voter sign-in no longer uses a PIN**. A voter enters only their Voter ID, gets emailed a one-time code, then enters that code to sign in — see [vote-backend/README.md](../vote-backend/README.md#domain-model--three-roles-three-different-logins).
+
 A centered card on the plain background with a **3-tab** switcher — Voter / Admin / Candidate — each tab is its own form, so the same screen handles all three logins:
 
 ```
@@ -139,8 +141,8 @@ Official Returning Officer Panel • AP Legislative Assembly Monitoring
 | --------- | ------------------------------ | ----------------- |
 | Admin     | `admin@elections.ap.gov.in`    | `admin@123`        |
 | Candidate | `kondababu.tdp@gmail.com`       | `candidate@123`     |
-| Voter (approved)     | `eg-voter-101`   | PIN `1234`           |
-| Voter (not approved) | `eg-voter-105`   | PIN `1234`           |
+| Voter (approved)     | `eg-voter-101`   | OTP emailed on sign-in (seeded voter emails are placeholder addresses — register a real voter via the admin dashboard to actually test this) |
+| Voter (not approved) | `eg-voter-105`   | OTP emailed on sign-in |
 
 ## Getting started
 

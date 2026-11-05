@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { User, Role, AuthResponse, VoterLoginPayload, CredentialLoginPayload } from '../models';
+import type { User, Role, AuthResponse, CredentialLoginPayload } from '../models';
 
 interface AuthContextType {
   user: User | null;
   role: Role | null;
   token: string | null;
   isAuthenticated: boolean;
-  loginVoter: (payload: VoterLoginPayload) => Promise<{ success: boolean; error?: string }>;
+  requestVoterOtp: (voterId: string) => Promise<{ success: boolean; message: string }>;
+  verifyVoterOtp: (voterId: string, otp: string) => Promise<{ success: boolean; error?: string }>;
   loginCredential: (payload: CredentialLoginPayload) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -93,24 +94,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     scheduleAutoLogout(data.token);
   };
 
-  // Voter login with Voter ID and PIN
-  const loginVoter = async (payload: VoterLoginPayload): Promise<{ success: boolean; error?: string }> => {
+  // Voter login step 1: request a one-time code emailed to the voter's registered address
+  const requestVoterOtp = async (voterId: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const res = await fetch(`${API_BASE}/auth/voter-login`, {
+      const res = await fetch(`${API_BASE}/auth/voter/request-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ voterId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, message: data.error || 'Could not send a one-time code. Please try again.' };
+      }
+      return { success: true, message: data.message };
+    } catch {
+      return { success: false, message: 'Network error while requesting a one-time code.' };
+    }
+  };
+
+  // Voter login step 2: verify the emailed code and establish the session
+  const verifyVoterOtp = async (voterId: string, otp: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/voter/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voterId, otp }),
       });
 
       if (!res.ok) {
-        return { success: false, error: 'Invalid voter ID or PIN. Please check and try again.' };
+        const data = await res.json().catch(() => ({}));
+        return { success: false, error: data.error || 'Invalid or expired code. Please try again.' };
       }
 
       const data: AuthResponse = await res.json();
       handleAuthSuccess(data);
       return { success: true };
     } catch {
-      return { success: false, error: 'Invalid voter ID or PIN. Please check and try again.' };
+      return { success: false, error: 'Network error while verifying the code.' };
     }
   };
 
@@ -166,7 +186,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
         token,
         isAuthenticated,
-        loginVoter,
+        requestVoterOtp,
+        verifyVoterOtp,
         loginCredential,
         logout,
         refreshUser,
