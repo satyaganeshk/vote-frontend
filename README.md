@@ -1,192 +1,178 @@
-# Vote Frontend
+# Vote Frontend (`vote-frontend`)
 
-React + TypeScript single-page app for the **East Godavari District Election Commission** demo — a secure, role-guarded voting portal with three completely different experiences depending on who is signed in: **Voter**, **Candidate**, or **Admin**.
+A secure, role-based democratic electronic voting frontend built with **React 18**, **TypeScript**, **Material UI (MUI)**, and **Vite**.
 
-Pairs with the [vote-backend](../vote-backend) Express/SQLite API.
+Designed specifically for the Andhra Pradesh Legislative Assembly Constituencies in the **East Godavari District** (Kakinada City, Kakinada Rural, Rajahmundry City, Rajahmundry Rural, Pithapuram, Amalapuram).
 
-## Tech stack
+---
 
-- **React 18** + **TypeScript**, bootstrapped with **Vite 5**
-- **MUI (Material UI) 5** — `@mui/material`, `@mui/icons-material`, `@emotion/*` for styling
-- React Context for state: `AuthContext` (session/JWT, stored in `sessionStorage`) and `VotingContext` (candidates, users, stats, vote actions)
-- No router — a single role-guard switch (`VotingApp.tsx`) decides what to render
+## 📸 Visual UI Walkthrough & Layouts
 
-## What the UI actually looks like
-
-The whole app sits on a custom MUI theme: a deep navy primary (`#0f3a6a`), an amber/bronze secondary (`#b45309`), a near-white page background (`#f8fafc`), and `Inter` as the font. Every logged-in screen shares the same dark-navy (`#0b2447`) app bar and footer:
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ 🗳️  ELECTION COMMISSION • EAST GODAVARI        [ROLE: Full Name]  [Sign Out] │
-│     Secure Role-Guarded Democratic Voting System                        │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│                     ← role-specific screen renders here →               │
-│                                                                          │
-├──────────────────────────────────────────────────────────────────────┤
-│   Session Guard Active • Storage Isolated to sessionStorage • Secret   │
-│                      Ballot Invariant Enforced                          │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-The role badge in the top-right changes color per role: amber/"warning" for Admin, bronze/"secondary" for Candidate, blue/"info" for Voter.
-
-### 1. Login screen (before authentication)
-
-> **Note:** this mockup predates two changes — login is now routed per role (`/login`, `/login/admin`, `/login/candidate` in `LoginScreen.tsx`) rather than tabs on one screen, and **Voter sign-in no longer uses a PIN**. A voter enters only their Voter ID, gets emailed a one-time code, then enters that code to sign in — see [vote-backend/README.md](../vote-backend/README.md#domain-model--three-roles-three-different-logins).
-
-A centered card on the plain background with a **3-tab** switcher — Voter / Admin / Candidate — each tab is its own form, so the same screen handles all three logins:
-
-```
-                 ┌───────────────┐
-                 │   🗳️ (navy)   │
-                 └───────────────┘
-                  ELECTION PORTAL
-      District Election Commission • East Godavari
-┌────────────────────────────────────────────────────┐
-│  [ 🗳️  Voter ]   [ 🛡️  Admin ]   [ 🪪  Candidate ]   │ ← full-width tabs
-├────────────────────────────────────────────────────┤
-│  Citizen Voter Authentication                        │
-│  Enter your official Voter ID and secure 4-digit PIN. │
-│                                                        │
-│  Voter ID        [ e.g. eg-voter-101            ]     │
-│  Security PIN    [ ••••                         ]     │
-│                                                        │
-│          [ 🗳️  Sign In as Voter ]                     │ ← full-width button
-│                                                        │
-│  ┌──────────────────────────────────────────────┐    │
-│  │ Demo Test Credentials:                        │    │
-│  │ • eg-voter-101 / PIN 1234                      │    │
-│  │ • eg-voter-102 / PIN 1234                      │    │
-│  └──────────────────────────────────────────────┘    │
-└────────────────────────────────────────────────────┘
+### 1. Unified Authentication Portal
+A tabbed, credential-safe login interface with generic error masking:
+```text
++---------------------------------------------------------------------------------+
+|                       ELECTION COMMISSION - EAST GODAVARI                       |
+|                             OFFICIAL VOTING PORTAL                              |
+|                                                                                 |
+|       [ (V) Voter Portal ]       [ (A) Returning Officer ]      [ (C) Candidate ]|
+|  +---------------------------------------------------------------------------+  |
+|  | Citizen Voter Authentication                                              |  |
+|  | Enter your official Voter ID and secure 4-digit PIN                       |  |
+|  |                                                                           |  |
+|  | Voter ID:    [ eg-voter-101                                           ]   |  |
+|  | Security PIN [ ****                                                   ]   |  |
+|  |                                                                           |  |
+|  | [                   SIGN IN AS CITIZEN VOTER                          ]   |  |
+|  +---------------------------------------------------------------------------+  |
++---------------------------------------------------------------------------------+
 ```
 
-Switching to the **Admin** or **Candidate** tab swaps the Voter-ID/PIN fields for an email + password form, swaps the button color (amber for Admin, bronze for Candidate), and shows its own demo-credential hint box. Invalid logins surface a red `Alert` banner above the form — always a generic "Invalid ..." message, never revealing which field was wrong.
-
-### 2. Voter view — the ballot
-
-What a signed-in **VOTER** sees is a status banner followed by a responsive grid of candidate cards:
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ Official Ballot • East Godavari District        [ 🔵 Eligible to Vote ] │
-│ Voter ID: eg-voter-101 | Name: ... | Constituency: Kakinada City   │
-└──────────────────────────────────────────────────────────────────┘
-
-Official Candidates (East Godavari District)        [ 3 Approved Nominees ]
-┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│ [ candidate photo]│  │ [ candidate photo]│  │ [ candidate photo]│
-│ Konda Babu      🚲│  │ Chandrasekhar   🪭│  │ Pantham Nanaji  🥛│
-│ Kakinada City      │  │ Kakinada City      │  │ Kakinada Rural     │
-│ [ TDP ]            │  │ [ YSRCP ]          │  │ [ JSP ]            │
-│ "Expansion of the  │  │ "Welfare disburse- │  │ "Youth tech hubs   │
-│  Kakinada port..." │  │  ments for..."     │  │  along NH-16..."   │
-│ ─────────────────  │  │ ─────────────────  │  │ ─────────────────  │
-│ Symbol: 🚲  [ Vote]│  │ Symbol: 🪭  [ Vote]│  │ Symbol: 🥛  [ Vote]│
-└──────────────────┘  └──────────────────┘  └──────────────────┘
-```
-
-Cards lift slightly on hover. Clicking **Vote** opens a confirmation dialog ("Is this the candidate you want to vote for?") showing the candidate's avatar, name, and party, plus a red warning that the vote is permanent. Confirming calls the API; on success the whole screen is replaced by a **"Thank You For Voting!"** card with a large green checkmark, and the session auto-logs-out 5 seconds later. If a voter re-opens the ballot after already voting, they instead see a **"You Have Already Voted"** card with the same layout.
-
-If the voter hasn't been approved by an Admin yet, the status chip turns amber/"Not Authorized by Admin", a warning `Alert` explains they need to contact the Election Commission, and every **Vote** button is disabled.
-
-### 3. Candidate view — profile & nomination dashboard
-
-```
-┌───────────────────┐  ┌──────────────────────────────────────────┐
-│  [ candidate photo]│  │ Electoral & Party Credentials   [ ✏️ Edit Profile ] │
-│    (260px tall)     │  ├──────────────────────────────────────────┤
-│  Konda Babu          │  │ Party Symbol: 🚲          Account Email: ...  │
-│  Telugu Desam Party   │  │                                              │
-│  [ Kakinada City ]    │  │ Electoral Manifesto                          │
-│  ───────────────────  │  │ ┌──────────────────────────────────────┐   │
-│  🗳️ Total Confirmed   │  │ │ Expansion of Kakinada deep-water port,│   │
-│     Votes               │  │ │ modern cold-storage for aqua farmers, │   │
-│     1420                │  │ │ and smart city infrastructure...      │   │
-└───────────────────┘  │ └──────────────────────────────────────┘   │
-                          └──────────────────────────────────────────┘
-      Status chip (top-right of page): [ ✅ Status: APPROVED ]
+### 2. Citizen Voter Ballot Screen (`role: 'VOTER'`)
+Once authenticated, eligible voters see approved candidates with symbols, manifestos, and portraits:
+```text
++---------------------------------------------------------------------------------+
+| [Icon] ELECTION COMMISSION - EAST GODAVARI        [Role: VOTER] [ Sign Out ]    |
++---------------------------------------------------------------------------------+
+|                                                                                 |
+| Official Ballot - East Godavari District           [ Status: Eligible to Vote ] |
+| Voter ID: eg-voter-101 | Name: Chundru Venkata Satyanarayana Murthy             |
+| Constituency: Kakinada City                                                     |
+|                                                                                 |
+| ------------------------------------------------------------------------------- |
+| Approved Election Candidates (4 Nominees)                                       |
+|                                                                                 |
+| +-------------------------+ +-------------------------+ +---------------------+ |
+| | [ Candidate Portrait ]  | | [ Candidate Portrait ]  | | [ Candidate Photo ] | |
+| | Vanamadi Venkateswara   | | Dwarampudi Chandrasekhar| | Pantham Nanaji      | |
+| | Rao (Konda Babu)        | | Reddy                   | |                     | |
+| | [TDP]         (🚲) Logo | | [YSRCP]       (🪭) Logo | | [JSP]     (🥛) Logo | |
+| | Port expansion & cold   | | Welfare disbursements   | | Youth tech hubs &   | |
+| | storage modernization   | | & harbor hospital fund  | | flood embankments   | |
+| |                         | |                         | |                     | |
+| | Symbol: 🚲 Bicycle      | | Symbol: 🪭 Fan          | | Symbol: 🥛 Glass    | |
+| | [       VOTE          ] | | [       VOTE          ] | | [       VOTE      ] | |
+| +-------------------------+ +-------------------------+ +---------------------+ |
++---------------------------------------------------------------------------------+
 ```
 
-Clicking **Edit Profile** turns the read-only fields into text inputs (party symbol, candidate photo URL, party symbol/logo URL, a multi-line manifesto box) and swaps the button to **Save Changes**. A success/error `Alert` confirms the result after saving.
-
-### 4. Admin view — election administration dashboard
-
-The richest screen: four color-coded KPI cards up top, then a 3-tab management console.
-
-```
-East Godavari Election Administration                [ + Nominate Candidate ]
-Official Returning Officer Panel • AP Legislative Assembly Monitoring
-
-┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐
-│REGISTERED │ │AUTHORIZED │ │ BALLOTS   │ │  VOTER    │
-│ VOTERS     │ │ VOTERS     │ │ RECORDED  │ │ TURNOUT   │
-│    7   👥  │ │    5   ✅  │ │   5   🗳️  │ │  71%  📊  │
-│ (blue)      │ │ (cyan)      │ │ (green)    │ │ (bronze)   │
-└───────────┘ └───────────┘ └───────────┘ └───────────┘
-
-[ Voter Authorization ] [ Candidate Approvals ] [ Election Results & Tallies ]
-```
-
-- **Voter Authorization tab** — a table of every voter/candidate account: name + ID, constituency, email, a "Voted / Not Voted Yet" chip, an "Approved to Vote / Restricted" chip, and an **Approve Voter** / **Revoke Approval** action button per row (revoke is disabled once that person has already voted).
-- **Candidate Approvals tab** — a table with the candidate's photo + name, party logo + name + symbol, constituency, a truncated manifesto, a status chip (`PENDING` amber / `APPROVED` green / `REJECTED` red), and **Approve** / **Reject** buttons.
-- **Election Results & Tallies tab** — one card per approved candidate with their symbol avatar, name/party/constituency, a live vote count + percentage, and a horizontal progress bar — explicitly labeled as anonymized, aggregate-only data ("individual ballots are decoupled from voters").
-
-**+ Nominate Candidate** opens a modal form (name, party name, party symbol/emoji, constituency, logo URL, candidate photo URL, manifesto) so an Admin can register a candidate directly — submitted nominations still require a separate Approve action in the Candidate Approvals tab.
-
-## Demo credentials
-
-| Role      | Identifier                   | Secret          |
-| --------- | ------------------------------ | ----------------- |
-| Admin     | `admin@elections.ap.gov.in`    | `admin@123`        |
-| Candidate | `kondababu.tdp@gmail.com`       | `candidate@123`     |
-| Voter (approved)     | `eg-voter-101`   | OTP emailed on sign-in (seeded voter emails are placeholder addresses — register a real voter via the admin dashboard to actually test this) |
-| Voter (not approved) | `eg-voter-105`   | OTP emailed on sign-in |
-
-## Getting started
-
-```bash
-cd vote-frontend
-npm install
-npm run dev       # http://localhost:5173
+### 3. Strict Confirmation Modal
+Clicking "Vote" immediately triggers a confirmation dialog:
+```text
++--------------------------------------------------------+
+| Confirm Ballot Submission                              |
+| ------------------------------------------------------ |
+| Is this the candidate you want to vote for?            |
+|                                                        |
+|   (🚲) Vanamadi Venkateswara Rao (Konda Babu)          |
+|        Telugu Desam Party (TDP) - 🚲 Bicycle           |
+|                                                        |
+| [!] Strict policy: Once submitted, your vote is        |
+|     permanent and cannot be retracted, edited, or      |
+|     re-voted.                                          |
+|                                                        |
+|               [ Cancel ]    [ Yes, Submit Vote ]       |
++--------------------------------------------------------+
 ```
 
-Make sure the [vote-backend](../vote-backend) is running too (`npm run dev` in that folder, default `http://localhost:5000`). If the API isn't on `localhost:5000`, point the frontend at it with a `.env` file:
-
+### 4. Post-Vote Thank-You & Session Isolation Screen
+After submitting, the session token is destroyed in `sessionStorage` and a permanent lock screen appears:
+```text
++---------------------------------------------------------------------------------+
+|                                                                                 |
+|                            (✓) CheckCircle                                      |
+|                       Thank You For Voting!                                     |
+|                                                                                 |
+|   Your secret ballot has been permanently cast in the East Godavari election.   |
+|   Your session has been securely closed to protect your ballot privacy.         |
+|                                                                                 |
+|   [i] Voter ID: eg-voter-101 • Constituency: Kakinada City                     |
+|       Ballot status: Permanent & Immutable                                      |
+|                                                                                 |
+|                          [ Return to Login ]                                    |
+|                                                                                 |
++---------------------------------------------------------------------------------+
 ```
+
+### 5. Returning Officer Admin Dashboard (`role: 'ADMIN'`)
+Admins approve voters, review nominations, and view tally statistics without seeing who voted for whom:
+```text
++---------------------------------------------------------------------------------+
+| [Icon] ELECTION COMMISSION - EAST GODAVARI        [Role: ADMIN] [ Sign Out ]    |
++---------------------------------------------------------------------------------+
+| [ TOTAL VOTERS: 7 ]  [ AUTHORIZED: 5 ]  [ BALLOTS RECORDED: 4 ]  [ TURNOUT: 80% ]|
+| ------------------------------------------------------------------------------- |
+| [ Voter Authorization ]      [ Candidate Approvals ]      [ Results & Tallies ] |
+|                                                                                 |
+| Citizen Name         | Constituency   | Ballot Status | Authorization | Action  |
+| ---------------------|----------------|---------------|---------------|-------- |
+| C.V. Satyanarayana   | Kakinada City  | [ Voted ]     | [ Authorized ]| Locked  |
+| A. Sita Lakshmi Devi | Rajahmundry    | [ Not Voted ] | [ Authorized ]| [Revoke]|
+| M. Surya Narayana    | Pithapuram     | [ Not Voted ] | [ Restricted ]| [Approve|
++---------------------------------------------------------------------------------+
+```
+
+### 6. Candidate Profile & Nomination View (`role: 'CANDIDATE'`)
+Nominees view their campaign manifesto, symbol logo, and live vote counter:
+```text
++---------------------------------------------------------------------------------+
+| Candidate Profile & Nomination Dashboard                    [ Status: APPROVED ]|
+| ------------------------------------------------------------------------------- |
+| +-----------------------+  +--------------------------------------------------+ |
+| | [ Candidate Photo ]   |  | Electoral & Party Credentials        [Edit Profile]| |
+| | Vanamadi Venkateswara |  | Party Symbol: 🚲 Bicycle                           | |
+| | Rao (Konda Babu)      |  | Account: kondababu.tdp@gmail.com                   | |
+| | Constituency: Kakinada|  |                                                    | |
+| |                       |  | Electoral Manifesto:                               | |
+| | [ Total Votes: 1420 ] |  | Expansion of Kakinada deep-water port, modern cold | |
+| +-----------------------+  | storage facilities for coastal aqua farmers...     | |
+|                            +--------------------------------------------------+ |
++---------------------------------------------------------------------------------+
+```
+
+---
+
+## 🛡️ Core Electoral Rules & Invariants
+
+1. **Role-Based Guards (RBAC)**:
+   - `VOTER`: Allowed only on the ballot screen. If `hasVoted === true`, immediately blocked with "You have already voted".
+   - `CANDIDATE`: Restricted to their own candidate profile (`/api/candidate/me`).
+   - `ADMIN`: Restricted to voter management, candidate approvals, and turnout tallies.
+   - Wrong routes automatically redirect users to their designated role home.
+2. **Session Security**:
+   - Authentication tokens are kept in **`sessionStorage`** (never `localStorage`), ensuring credentials are automatically purged upon tab or browser close.
+   - Built-in timer automatically logs the user out when the JWT expires.
+3. **Generic Error Messages**:
+   - Bad login requests return a uniform error (`"Invalid voter ID or PIN."` or `"Invalid email or password."`), preventing username enumeration or credential leaking.
+4. **Secret Ballot Guarantee**:
+   - Even administrators cannot see which candidate a voter chose. Only aggregate candidate totals are displayed.
+
+---
+
+## 🚀 Setup & Execution
+
+### 1. Environment Configuration
+Create `.env` in `vote-frontend`:
+```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Other scripts:
-
+### 2. Install & Start
 ```bash
-npm run build      # tsc -b && vite build -> dist/
-npm run preview    # preview the production build locally
+cd vote-frontend
+npm install
+npm run dev
 ```
+The app runs at `http://localhost:5173`.
 
-## Project structure
+---
 
-```
-vote-frontend/
-└─ src/
-   ├─ App.tsx                     # Wraps the app in AuthProvider + VotingProvider
-   ├─ pages/VotingApp.tsx          # App bar, footer, role-guard router (Voter/Candidate/Admin/Login)
-   ├─ components/
-   │  ├─ LoginScreen.tsx           # 3-tab login (Voter / Admin / Candidate)
-   │  ├─ VoterBallot.tsx           # Candidate grid, vote confirmation dialog, voted/thank-you states
-   │  ├─ AdminDashboard.tsx        # KPI cards, voter/candidate/results tabs, nominate-candidate modal
-   │  ├─ CandidateProfile.tsx      # Own profile view/edit + live vote count
-   │  └─ icons.tsx                  # Re-exported MUI icon set used across the app
-   ├─ context/
-   │  ├─ AuthContext.tsx            # JWT/session storage, auto-logout on token expiry
-   │  └─ VotingContext.tsx          # Candidates/users/stats fetching + vote/approve/review actions
-   └─ models/index.ts               # Shared TypeScript types (mirrors the backend's models)
-```
+## 🔑 Demo Login Credentials
 
-## Session & security behavior worth knowing
-
-- Auth state lives in `sessionStorage` (cleared on tab close), not `localStorage`.
-- The JWT's `exp` claim is decoded client-side to schedule an automatic logout the moment the token expires.
-- After a successful vote, the session is force-logged-out after 5 seconds to prevent any further interaction with that ballot.
-- Every write action (`castVote`, `approveVoter`, `reviewCandidate`, `registerCandidate`) re-fetches fresh state from the API afterward rather than trusting optimistic local updates.
+| Role | Identifier / Email | PIN / Password | Details |
+|---|---|---|---|
+| **Voter** | `eg-voter-101` | `1234` | Approved voter (Kakinada City) |
+| **Voter** | `eg-voter-102` | `1234` | Approved voter (Rajahmundry City) |
+| **Voter** | `eg-voter-105` | `1234` | Pending authorization voter |
+| **Admin** | `admin@elections.ap.gov.in` | `admin@123` | District Election Officer |
+| **Candidate** | `kondababu.tdp@gmail.com` | `candidate@123` | TDP Nominee (Kakinada City) |
